@@ -15,6 +15,9 @@ provider:
   runtime: nodejs12.x
   stage: prod
   region: us-east-1
+  tracing:
+    apiGateway: true
+    lambda: true
  # These environment variables are made available to our functions
   # under process.env.
   environment:
@@ -33,7 +36,9 @@ provider:
         - dynamodb:PutItem
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
-      Resource: "arn:aws:dynamodb:us-east-1:*:*"
+        - xray:PutTraceSegments
+        - xray:PutTelemetryRecords
+      Resource: "*"
 
 
 functions:
