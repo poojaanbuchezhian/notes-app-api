@@ -1,142 +1,89 @@
-# Serverless Node.js Starter
+A note taking application powered by a serverless API written completely in JavaScript.
 
-A Serverless starter that adds ES7 syntax, serverless-offline, linting, environment variables, and unit test support. Part of the [Serverless Stack](http://serverless-stack.com) guide.
+AWS ACCOUNT SETUP
 
-[Serverless Node.js Starter](https://github.com/AnomalyInnovations/serverless-nodejs-starter) uses the [serverless-bundle](https://github.com/AnomalyInnovations/serverless-bundle) plugin (an extension of the [serverless-webpack](https://github.com/serverless-heaven/serverless-webpack) plugin) and the [serverless-offline](https://github.com/dherault/serverless-offline) plugin. It supports:
+Initial steps involved account creation, IAM(identity and access management) user
+creation which enables us to manage users and user permissions in AWS. By doing so,
+we can get hold of Access key ID and Secret access key. This will be used by AWS
+CLI and Serverless Framework. To make it easier to work with a lot of the AWS
+services, we used the AWS CLI. They’ll be connecting to the AWS API directly and will
+not be using the Management Console.
 
-- **Generating optimized Lambda packages with Webpack**
-- **Use ES7 syntax in your handler functions**
-  - Use `import` and `export`
-- **Run API Gateway locally**
-  - Use `serverless offline start`
-- **Support for unit tests**
-  - Run `npm test` to run your tests
-- **Sourcemaps for proper error messages**
-  - Error message show the correct line numbers
-  - Works in production with CloudWatch
-- **Lint your code with ESLint**
-- **Add environment variables for your stages**
-- **No need to manage Webpack or Babel configs**
+SETTING UP THE SERVERLESS BACKEND
 
----
+To build the backend for our notes app, We used DynamoDB to store the data.
+Amazon DynamoDB is a fully managed NoSQL database that provides fast and
+predictable performance with seamless scalability. Similar to other databases,
+DynamoDB stores data in tables. Each table contains multiple items, and each item is
+composed of one or more attributes.
+After getting our database table ready, to get things set up for handling file uploads, we
+had to handle file uploads because each note can have an uploaded file as an
+attachment. Amazon S3 provides storage service through web services interfaces like
+REST. It can store any object in S3 including images, videos, files, etc. Objects are
+organized into buckets, and identified within each bucket by a unique, user-assigned
+key. We created an S3 bucket which will be used to store user uploaded files from our
+notes app.
+Our notes app needs to handle user accounts and authentication in a secure and
+reliable way. To do this we made use of Amazon Cognito. Amazon Cognito User Pool
+makes it easy for developers to add sign-up and sign-in functionality to web and mobile
+applications. It serves as our own identity provider to maintain a user directory. It
+supports user registration and sign-in, as well as provisioning identity tokens for
+signed-in users.
+User Pool was created to enable users to to be able to sign up and login with their
+email as their username. Further app client was created and a unique domain name for
+our notes app was selected.
+Since we are going to be using AWS Lambda and Amazon API Gateway to create our
+backend, Serverless Framework comes into play. The Serverless Framework enables
+developers to deploy backend applications as independent functions that will be
+deployed to AWS Lambda. It also configures AWS Lambda to run our code in response
+to HTTP requests using Amazon API Gateway. API Gateway makes it easy for
+developers to create, publish, maintain, monitor, and secure APIs.
 
-### Demo
+BUILDING A SERVERLESS REST API
 
-A demo version of this service is hosted on AWS - [`https://z6pv80ao4l.execute-api.us-east-1.amazonaws.com/dev/hello`](https://z6pv80ao4l.execute-api.us-east-1.amazonaws.com/dev/hello)
+API to create a note will take the note object as the input and store it in the database
+with a new id. The note object will contain the content field (the content of the note) and
+an attachment field (the URL to the uploaded file). Testing is done locally by mocking
+the input parameters.
+We’ve created a basic CRUD (create, read, update, and delete) APIs.
 
-And here is the ES7 source behind it
+● API to retrieve a note given its ID
 
-``` javascript
-export const hello = async (event, context) => {
-  return {
-    statusCode: 200,
-    body: JSON.stringify({
-      message: `Go Serverless v1.0! ${(await message({ time: 1, copy: 'Your function executed successfully!'}))}`,
-      input: event,
-    }),
-  };
-};
+● API that returns a list of all the notes a user has
 
-const message = ({ time, ...rest }) => new Promise((resolve, reject) =>
-  setTimeout(() => {
-    resolve(`${rest.copy} (with a delay)`);
-  }, time * 1000)
-);
-```
+● API that allows a user to update a note with a new note object given its id
 
-### Upgrading from v1.x
+● API that allows a user to delete a given
 
-We have detailed instructions on how to upgrade your app to the v2.0 of the starter if you were using v1.x before. [Read about it here](https://github.com/AnomalyInnovations/serverless-nodejs-starter/releases/tag/v2.0).
+We made a small addition to this by adding an endpoint that works with a 3rd party API
+to work with environment variables and to accept credit card payments using Stripe.
+In the case of our notes app we are going to allow our users to pay a fee for storing a
+certain number of notes.
 
-### Requirements
+1. The user is going to select the number of notes he wants to store and puts in his
+credit card information.
 
-- [Install the Serverless Framework](https://serverless.com/framework/docs/providers/aws/guide/installation/)
-- [Configure your AWS CLI](https://serverless.com/framework/docs/providers/aws/guide/credentials/)
+2. We are going to generate a one time token by calling the Stripe SDK on the
+frontend to verify that the credit card info is valid.
 
-### Installation
+3. We will then call an API passing in the number of notes and the generated token.
 
-To create a new Serverless project.
+4. The API will take the number of notes, figure out how much to charge based on
+our pricing plan, and call the Stripe API to charge our user.
 
-``` bash
-$ serverless install --url https://github.com/AnomalyInnovations/serverless-nodejs-starter --name my-project
-```
+DEPLOYING THE BACKEND
 
-Enter the new directory
-
-``` bash
-$ cd my-project
-```
-
-Install the Node.js packages
-
-``` bash
-$ npm install
-```
-
-### Usage
-
-To run a function on your local
-
-``` bash
-$ serverless invoke local --function hello
-```
-
-To simulate API Gateway locally using [serverless-offline](https://github.com/dherault/serverless-offline)
-
-``` bash
-$ serverless offline start
-```
-
-Deploy your project
-
-``` bash
-$ serverless deploy
-```
-
-Deploy a single function
-
-``` bash
-$ serverless deploy function --function hello
-```
-
-#### Running Tests
-
-Run your tests using
-
-``` bash
-$ npm test
-```
-
-We use Jest to run our tests. You can read more about setting up your tests [here](https://facebook.github.io/jest/docs/en/getting-started.html#content).
-
-#### Environment Variables
-
-To add environment variables to your project
-
-1. Rename `env.example` to `.env`.
-2. Add environment variables for your local stage to `.env`.
-3. Uncomment `environment:` block in the `serverless.yml` and reference the environment variable as `${env:MY_ENV_VAR}`. Where `MY_ENV_VAR` is added to your `.env` file.
-4. Make sure to not commit your `.env`.
-
-#### Linting
-
-We use [ESLint](https://eslint.org) to lint your code via the [serverless-bundle](https://github.com/AnomalyInnovations/serverless-bundle) plugin.
-
-You can turn this off by adding the following to your `serverless.yml`.
-
-``` yaml
-custom:
-  bundle:
-    linting: false
-```
-
-To [override the default config](https://eslint.org/docs/user-guide/configuring), add a `.eslintrc.json` file. To ignore ESLint for specific files, add it to a `.eslintignore` file.
-
-### Support
-
-- Open a [new issue](https://github.com/AnomalyInnovations/serverless-nodejs-starter/issues/new) if you've found a bug or have some suggestions.
-- Or submit a pull request!
-
----
-
-This repo is maintained by [Anomaly Innovations](https://anoma.ly); makers of [Seed](https://seed.run) and [Serverless Stack](https://serverless-stack.com).
+We have the User Pool that is going to store all of our users and help sign in and sign
+them up. We also have an S3 bucket that we will use to help our users upload files as
+attachments for their notes. The final piece that ties all these services together in a
+secure way is called Amazon Cognito Federated Identities.
+Amazon Cognito Federated Identities enables developers to create unique identities for
+your users and authenticate them with federated identity providers. With a federated
+identity, we can obtain temporary, limited-privilege AWS credentials to securely access
+other AWS services such as Amazon DynamoDB, Amazon S3, and Amazon API
+Gateway.
+We will be using our User Pool as the identity provider. Once a user is authenticated via
+our User Pool, the Identity Pool will attach an IAM Role to the user. We will define a
+policy for this IAM Role to grant access to the S3 bucket and our API. This is the
+Amazon way of securing your resources.
+Finally, Deployment and Testing of the API are done.
